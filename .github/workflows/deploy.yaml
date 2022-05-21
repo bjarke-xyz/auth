@@ -35,13 +35,13 @@ jobs:
         id: publish
         with:
           apiToken: ${{ secrets.CF_WORKER_TOKEN }}
-          environment: 'production'
-          command: 'publish src/index.ts'
+          environment: "production"
+          command: "publish src/index.ts"
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CLOUDFLARE_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
-          - name: Notify on error
-      - uses: fjogeleit/http-request-action@v1
+      - name: Notify on error
+        uses: fjogeleit/http-request-action@v1
         if: failure() && steps.publish.outcome == 'failure'
         with:
           url: "${{ secrets.NOTIFICATIONS_URL }}"
@@ -58,4 +58,3 @@ jobs:
           username: "${{ secrets.NOTIFICATIONS_USERNAME }}"
           password: "${{ secrets.NOTIFICATIONS_PASSWORD }}"
           data: '{ "channels": ["discord", "email"], "message": { "message": "🚀 ${{ github.repository }} has been released. <https://github.com/${{ github.repository }}/>" } }'
-

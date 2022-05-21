@@ -2,6 +2,8 @@ name = "auth"
 main = "src/index.ts"
 compatibility_date = "2022-05-15"
 
+node_compat = true
+
 kv_namespaces = [
     { binding = "KV_AUTH", id = "2f43a8deb2cb4422834e6a5f967ef47d", preview_id = "7b49fccb27f04244800291527ff8a22d" }
 ]

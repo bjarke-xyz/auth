@@ -41,7 +41,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CLOUDFLARE_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           - name: Notify on error
-        uses: fjogeleit/http-request-action@v1
+      - uses: fjogeleit/http-request-action@v1
         if: failure() && steps.publish.outcome == 'failure'
         with:
           url: "${{ secrets.NOTIFICATIONS_URL }}"

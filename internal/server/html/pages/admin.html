@@ -1,0 +1,29 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<form method="post" action="/logout">
+  <button type="submit">Logout</button>
+</form>
+<hr />
+<table>
+  <thead>
+    <tr>
+      <th>UID</th>
+      <th>Email</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ range .Users }}
+    <tr>
+      <td>{{ .UID }}</td>
+      <td>{{ .Email }}</td>
+      <td>
+        <div>
+          <a href="/admin/user?uid={{ .UID }}">Edit</a>
+        </div>
+      </td>
+    </tr>
+    {{ end }}
+  </tbody>
+</table>
+{{end}}

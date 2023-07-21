@@ -1,0 +1,19 @@
+{{define "content"}}
+<h1>{{.Title}}</h1>
+<a href="/admin">Back</a>
+{{ if .Error }}
+<p class="error">{{.Error}}</p>
+{{ end }} {{ if .User }}
+<div>User {{.User.UID}}</div>
+<div>{{.User.Email}}</div>
+<hr />
+
+<div>
+  <form method="post" action="/admin/user">
+    <h2>Custom claims</h2>
+    <input type="hidden" name="uid" value="{{.User.UID}}" />
+    <textarea name="customClaims">{{.UserCustomClaimsJson}}</textarea>
+    <button type="submit">Save</button>
+  </form>
+</div>
+{{ end }} {{end}}

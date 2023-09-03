@@ -14,7 +14,6 @@ import (
 	"github.com/bjarke-xyz/auth/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 	"google.golang.org/api/option"
 )
 
@@ -25,9 +24,13 @@ func ServerCmd(ctx context.Context) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Short: "Runs the server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			port = 7000
+			port = 7100
+			grpcPort := 7101
 			if os.Getenv("PORT") != "" {
 				port, _ = strconv.Atoi(os.Getenv("PORT"))
+			}
+			if os.Getenv("GRPC_PORT") != "" {
+				grpcPort, _ = strconv.Atoi(os.Getenv("GRPC_PORT"))
 			}
 			logger := cmdutil.NewLogger("api")
 
@@ -54,6 +57,10 @@ func ServerCmd(ctx context.Context) *cobra.Command {
 				return fmt.Errorf("error initializing server: %w", err)
 			}
 			srv := server.Server(port)
+			grpcSrv, grpcLis, err := server.GrpcServer(grpcPort)
+			if err != nil {
+				return fmt.Errorf("failed to create grpc server: %w", err)
+			}
 
 			// metrics server
 			go func() {
@@ -65,7 +72,10 @@ func ServerCmd(ctx context.Context) *cobra.Command {
 			go func() {
 				_ = srv.ListenAndServe()
 			}()
-			logger.Info("started server", slog.Int("port", port))
+			go func() {
+				_ = grpcSrv.Serve(grpcLis)
+			}()
+			logger.Info("started server", "webPort", port, "grpcPort", grpcPort)
 			<-ctx.Done()
 			_ = srv.Shutdown(ctx)
 			return nil

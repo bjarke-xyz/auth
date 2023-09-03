@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
-	"firebase.google.com/go/v4/auth"
+	"github.com/bjarke-xyz/auth/internal/auth"
 	"github.com/samber/lo"
 )
 
@@ -96,17 +97,7 @@ func (s *server) firebaseJwtVerifier(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		auth, err := s.app.Auth(ctx)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			s.logger.Error("failed to get firebase auth", "error", err)
-		}
-
-		token, err := auth.VerifyIDToken(ctx, idTokenCookie.Value)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token, err := auth.ValidateToken(ctx, os.Getenv("FIREBASE_PROJECT_ID"), idTokenCookie.Value)
 		if !lo.Contains(s.allowedUsers, token.Subject) {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -120,15 +111,15 @@ type contextKey struct {
 	name string
 }
 
-func NewContext(ctx context.Context, t *auth.Token, refreshToken string, err error) context.Context {
+func NewContext(ctx context.Context, t *auth.AuthToken, refreshToken string, err error) context.Context {
 	ctx = context.WithValue(ctx, IdTokenCtxKey, t)
 	ctx = context.WithValue(ctx, RefreshTokenCtxKey, refreshToken)
 	ctx = context.WithValue(ctx, ErrorCtxKey, err)
 	return ctx
 }
 
-func TokenFromContext(ctx context.Context) (*auth.Token, string, error) {
-	idToken, _ := ctx.Value(IdTokenCtxKey).(*auth.Token)
+func TokenFromContext(ctx context.Context) (*auth.AuthToken, string, error) {
+	idToken, _ := ctx.Value(IdTokenCtxKey).(*auth.AuthToken)
 	refreshToken, _ := ctx.Value(RefreshTokenCtxKey).(string)
 	var err error
 	err, _ = ctx.Value(ErrorCtxKey).(error)

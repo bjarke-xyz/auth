@@ -1,0 +1,59 @@
+# fly.toml app configuration file generated for bxyz-auth on 2023-09-03T10:07:21+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "bxyz-auth"
+primary_region = "ams"
+
+[build]
+builder = "paketobuildpacks/builder:base"
+buildpacks = ["gcr.io/paketo-buildpacks/go"]
+
+[env]
+ENV = "prod"
+PORT = "8080"
+GRPC_PORT = "8081"
+
+# WEB
+[[services]]
+internal_port = 8080
+processes = ["app"]
+protocol = "tcp"
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+[[services.ports]]
+handlers = ["http"]
+port = 80
+force_https = true
+[[services.ports]]
+handlers = ["tls", "http"]
+port = 443
+[[services.http_checks]]
+interval = 10000
+grace_period = "5s"
+method = "get"
+path = "/up"
+protocol = "http"
+timeout = 2000
+
+# GRPC
+[[services]]
+internal_port = 8081
+processes = ["app"]
+protocol = "tcp"
+[[services.ports]]
+handlers = ["tls"]
+port = 8081
+tls_options = { "alpn" = ["h2"] }
+[[services.tcp_checks]]
+grace_period = "1s"
+interval = "15s"
+restart_limit = 0
+timeout = "2s"
+
+
+[metrics]
+port = 9091
+path = "/metrics"

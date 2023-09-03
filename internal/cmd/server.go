@@ -18,17 +18,16 @@ import (
 )
 
 func ServerCmd(ctx context.Context) *cobra.Command {
-	var port int
 	cmd := &cobra.Command{
 		Use:   "server",
 		Args:  cobra.ExactArgs(0),
 		Short: "Runs the server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			port = 7100
-			grpcPort := 7101
+			port := 7100
 			if os.Getenv("PORT") != "" {
 				port, _ = strconv.Atoi(os.Getenv("PORT"))
 			}
+			grpcPort := 7101
 			if os.Getenv("GRPC_PORT") != "" {
 				grpcPort, _ = strconv.Atoi(os.Getenv("GRPC_PORT"))
 			}

@@ -57,8 +57,8 @@ func (s *server) Server(port int) *http.Server {
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: s.Routes(),
 	}
-}
 
+}
 func (s *server) GrpcServer(port int) (*grpc.Server, net.Listener, error) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {

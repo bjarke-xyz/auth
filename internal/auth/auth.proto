@@ -19,7 +19,12 @@ message AuthToken {
     string subject = 6;
     string UID = 7;
     map<string, google.protobuf.Any> claims = 8;
+    repeated string products = 9;
+    string role = 10;   
+    repeated string groups = 11;
 }
+
+
 
 message ValidateTokenRequest {
     string token = 1;

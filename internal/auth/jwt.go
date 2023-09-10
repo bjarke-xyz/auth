@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/golang/protobuf/ptypes/any"
+	pany "github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -96,6 +96,12 @@ func ValidateToken(ctx context.Context, audience string, tokenStr string) (*Auth
 			authToken.Subject = v.(string)
 		case "user_id":
 			authToken.UID = v.(string)
+		case "role":
+			authToken.Role = v.(string)
+		case "products":
+			authToken.Products = convertToArrayString(v)
+		case "groups":
+			authToken.Groups = convertToArrayString(v)
 		default:
 			anyVal, err := ConvertInterfaceToAny(v)
 			if err != nil {
@@ -107,8 +113,25 @@ func ValidateToken(ctx context.Context, audience string, tokenStr string) (*Auth
 	return authToken, nil
 }
 
-func ConvertInterfaceToAny(v interface{}) (*any.Any, error) {
-	anyValue := &any.Any{}
+func convertToArrayString(val any) []string {
+	ifaceList, ok := val.([]any)
+	if !ok {
+		return []string{}
+	}
+	strList := make([]string, len(ifaceList))
+	for i, ifaceVal := range ifaceList {
+		strVal, ok := ifaceVal.(string)
+		if ok {
+			strList[i] = strVal
+		} else {
+			strList[i] = ""
+		}
+	}
+	return strList
+}
+
+func ConvertInterfaceToAny(v interface{}) (*pany.Any, error) {
+	anyValue := &pany.Any{}
 	bytes, _ := json.Marshal(v)
 	bytesValue := &wrappers.BytesValue{
 		Value: bytes,
@@ -117,7 +140,7 @@ func ConvertInterfaceToAny(v interface{}) (*any.Any, error) {
 	return anyValue, err
 }
 
-func ConvertAnyToInterface(anyValue *any.Any) (interface{}, error) {
+func ConvertAnyToInterface(anyValue *pany.Any) (interface{}, error) {
 	var value interface{}
 	bytesValue := &wrappers.BytesValue{}
 	err := anypb.UnmarshalTo(anyValue, bytesValue, proto.UnmarshalOptions{})

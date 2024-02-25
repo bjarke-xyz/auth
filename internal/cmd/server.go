@@ -27,10 +27,6 @@ func ServerCmd(ctx context.Context) *cobra.Command {
 			if os.Getenv("PORT") != "" {
 				port, _ = strconv.Atoi(os.Getenv("PORT"))
 			}
-			grpcPort := 7101
-			if os.Getenv("GRPC_PORT") != "" {
-				grpcPort, _ = strconv.Atoi(os.Getenv("GRPC_PORT"))
-			}
 			logger := cmdutil.NewLogger("api")
 
 			credentialsJson := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS_CONTENT")
@@ -56,10 +52,6 @@ func ServerCmd(ctx context.Context) *cobra.Command {
 				return fmt.Errorf("error initializing server: %w", err)
 			}
 			srv := server.Server(port)
-			grpcSrv, grpcLis, err := server.GrpcServer(grpcPort)
-			if err != nil {
-				return fmt.Errorf("failed to create grpc server: %w", err)
-			}
 
 			// metrics server
 			go func() {
@@ -71,10 +63,7 @@ func ServerCmd(ctx context.Context) *cobra.Command {
 			go func() {
 				_ = srv.ListenAndServe()
 			}()
-			go func() {
-				_ = grpcSrv.Serve(grpcLis)
-			}()
-			logger.Info("started server", "webPort", port, "grpcPort", grpcPort)
+			logger.Info("started server", "webPort", port)
 			<-ctx.Done()
 			_ = srv.Shutdown(ctx)
 			return nil

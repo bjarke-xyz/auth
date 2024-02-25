@@ -1,36 +1,27 @@
-package auth
+package jwt
 
 import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	pany "github.com/golang/protobuf/ptypes/any"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var keyRetreiver = NewGoogleKeyRetreiver()
 
 var ErrValidation = errors.New("validation error")
 
-func WarmCache(ctx context.Context) {
-	keyRetreiver.GetKeys(ctx)
-}
-
-func ValidateToken(ctx context.Context, audience string, tokenStr string) (*AuthToken, error) {
+func ValidateToken(ctx context.Context, request ValidateTokenRequest) (AuthToken, error) {
 	keys, err := keyRetreiver.GetKeys(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error getting keys: %w", err)
+		return AuthToken{}, fmt.Errorf("error getting keys: %w", err)
 	}
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(request.Token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("%w: unexpected signing method: %v", ErrValidation, token.Header["alg"])
 		}
@@ -53,32 +44,32 @@ func ValidateToken(ctx context.Context, audience string, tokenStr string) (*Auth
 		}
 		publicKey := cert.PublicKey.(*rsa.PublicKey)
 		return publicKey, nil
-	}, jwt.WithValidMethods([]string{"RS256"}), jwt.WithAudience(audience), jwt.WithIssuer("https://securetoken.google.com/"+audience))
+	}, jwt.WithValidMethods([]string{"RS256"}), jwt.WithAudience(request.Audience), jwt.WithIssuer("https://securetoken.google.com/"+request.Audience))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrValidation, err)
+		return AuthToken{}, fmt.Errorf("%w: %w", ErrValidation, err)
 	}
 	if !token.Valid {
-		return nil, fmt.Errorf("%w: token not valid", ErrValidation)
+		return AuthToken{}, fmt.Errorf("%w: token not valid", ErrValidation)
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("%w: failed to get token map claims", ErrValidation)
+		return AuthToken{}, fmt.Errorf("%w: failed to get token map claims", ErrValidation)
 	}
 	authTimeIface, ok := claims["auth_time"]
 	if !ok {
-		return nil, fmt.Errorf("%w: claim auth_time not found", ErrValidation)
+		return AuthToken{}, fmt.Errorf("%w: claim auth_time not found", ErrValidation)
 	}
 	authTime, ok := authTimeIface.(float64)
 	if !ok {
-		return nil, fmt.Errorf("%w: claim auth_time has invalid type", ErrValidation)
+		return AuthToken{}, fmt.Errorf("%w: claim auth_time has invalid type", ErrValidation)
 	}
 	// auth_time must be in the past
 	now := float64(time.Now().UTC().Unix())
 	if authTime > now {
-		return nil, fmt.Errorf("%w: auth_time must be in the past. auth_time=%f now=%f", ErrValidation, authTime, now)
+		return AuthToken{}, fmt.Errorf("%w: auth_time must be in the past. auth_time=%f now=%f", ErrValidation, authTime, now)
 	}
-	authToken := &AuthToken{
-		Claims: make(map[string]*anypb.Any),
+	authToken := AuthToken{
+		Claims: make(map[string]any),
 	}
 	for k, v := range claims {
 		switch k {
@@ -103,11 +94,7 @@ func ValidateToken(ctx context.Context, audience string, tokenStr string) (*Auth
 		case "groups":
 			authToken.Groups = convertToArrayString(v)
 		default:
-			anyVal, err := ConvertInterfaceToAny(v)
-			if err != nil {
-				return nil, fmt.Errorf("error converting interface to anypb")
-			}
-			authToken.Claims[k] = anyVal
+			authToken.Claims[k] = v
 		}
 	}
 	return authToken, nil
@@ -130,26 +117,21 @@ func convertToArrayString(val any) []string {
 	return strList
 }
 
-func ConvertInterfaceToAny(v interface{}) (*pany.Any, error) {
-	anyValue := &pany.Any{}
-	bytes, _ := json.Marshal(v)
-	bytesValue := &wrappers.BytesValue{
-		Value: bytes,
-	}
-	err := anypb.MarshalFrom(anyValue, bytesValue, proto.MarshalOptions{})
-	return anyValue, err
+type AuthToken struct {
+	AuthTime float64
+	Issuer   string
+	Audience string
+	Expires  float64
+	IssuedAt float64
+	Subject  string
+	UID      string
+	Claims   map[string]any
+	Products []string
+	Role     string
+	Groups   []string
 }
 
-func ConvertAnyToInterface(anyValue *pany.Any) (interface{}, error) {
-	var value interface{}
-	bytesValue := &wrappers.BytesValue{}
-	err := anypb.UnmarshalTo(anyValue, bytesValue, proto.UnmarshalOptions{})
-	if err != nil {
-		return value, err
-	}
-	uErr := json.Unmarshal(bytesValue.Value, &value)
-	if err != nil {
-		return value, uErr
-	}
-	return value, nil
+type ValidateTokenRequest struct {
+	Token    string
+	Audience string
 }

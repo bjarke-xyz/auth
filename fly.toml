@@ -13,7 +13,6 @@ buildpacks = ["gcr.io/paketo-buildpacks/go"]
 [env]
 ENV = "prod"
 PORT = "8080"
-GRPC_PORT = "8081"
 
 # WEB
 [[services]]
@@ -37,25 +36,6 @@ method = "get"
 path = "/up"
 protocol = "http"
 timeout = 2000
-
-# GRPC
-[[services]]
-internal_port = 8081
-processes = ["app"]
-protocol = "tcp"
-auto_stop_machines = true
-auto_start_machines = true
-# min_machines_running = 1
-[[services.ports]]
-handlers = ["tls"]
-port = 8081
-tls_options = { "alpn" = ["h2"] }
-[[services.tcp_checks]]
-grace_period = "1s"
-interval = "15s"
-restart_limit = 0
-timeout = "2s"
-
 
 [metrics]
 port = 9091

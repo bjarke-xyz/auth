@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/bjarke-xyz/auth/internal/auth"
+	"github.com/bjarke-xyz/auth/pkg/jwt"
 	"github.com/samber/lo"
 )
 
@@ -97,7 +97,11 @@ func (s *server) firebaseJwtVerifier(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		token, err := auth.ValidateToken(ctx, os.Getenv("FIREBASE_PROJECT_ID"), idTokenCookie.Value)
+		validateReq := jwt.ValidateTokenRequest{
+			Token:    idTokenCookie.Value,
+			Audience: os.Getenv("FIREBASE_PROJECT_ID"),
+		}
+		token, err := jwt.ValidateToken(ctx, validateReq)
 		if !lo.Contains(s.allowedUsers, token.Subject) {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -111,15 +115,15 @@ type contextKey struct {
 	name string
 }
 
-func NewContext(ctx context.Context, t *auth.AuthToken, refreshToken string, err error) context.Context {
+func NewContext(ctx context.Context, t jwt.AuthToken, refreshToken string, err error) context.Context {
 	ctx = context.WithValue(ctx, IdTokenCtxKey, t)
 	ctx = context.WithValue(ctx, RefreshTokenCtxKey, refreshToken)
 	ctx = context.WithValue(ctx, ErrorCtxKey, err)
 	return ctx
 }
 
-func TokenFromContext(ctx context.Context) (*auth.AuthToken, string, error) {
-	idToken, _ := ctx.Value(IdTokenCtxKey).(*auth.AuthToken)
+func TokenFromContext(ctx context.Context) (jwt.AuthToken, string, error) {
+	idToken, _ := ctx.Value(IdTokenCtxKey).(jwt.AuthToken)
 	refreshToken, _ := ctx.Value(RefreshTokenCtxKey).(string)
 	var err error
 	err, _ = ctx.Value(ErrorCtxKey).(error)

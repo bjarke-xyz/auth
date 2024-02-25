@@ -3,14 +3,10 @@ module github.com/bjarke-xyz/auth
 go 1.20
 
 require (
-	github.com/golang/protobuf v1.5.3
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0
 	github.com/samber/lo v1.38.1
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	google.golang.org/api v0.126.0
-	google.golang.org/grpc v1.57.1
-	google.golang.org/protobuf v1.31.0
 )
 
 require (
@@ -26,6 +22,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -49,6 +46,8 @@ require (
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/grpc v1.57.1 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 )
 
 require (

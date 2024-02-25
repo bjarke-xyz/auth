@@ -6,22 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"net"
 	"net/http"
 	"sort"
 
 	firebase "firebase.google.com/go/v4"
 	fbAuth "firebase.google.com/go/v4/auth"
-	"github.com/bjarke-xyz/auth/internal/auth"
 	"github.com/bjarke-xyz/auth/internal/server/html"
 	"github.com/bjarke-xyz/auth/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/exp/slog"
 	"google.golang.org/api/iterator"
-	"google.golang.org/grpc"
-
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 )
 
 //go:embed static
@@ -58,19 +53,6 @@ func (s *server) Server(port int) *http.Server {
 		Handler: s.Routes(),
 	}
 
-}
-func (s *server) GrpcServer(port int) (*grpc.Server, net.Listener, error) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return nil, nil, err
-	}
-	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
-		logging.UnaryServerInterceptor(logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
-			s.logger.Log(ctx, slog.Level(level), msg, fields...)
-		})),
-	))
-	auth.RegisterAuthServer(grpcServer, newAuthServer(s.logger))
-	return grpcServer, lis, nil
 }
 
 func (s *server) Routes() *chi.Mux {
